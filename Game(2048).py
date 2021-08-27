@@ -1,9 +1,48 @@
 """
 Author: Kartikay Chiranjeev Gupta.
-Last Modified: 8/26/2021
+Last Modified: 8/27/2021
 """
 import random
 import copy
+import pygame
+from pygame import *
+import sys
+
+WIN = pygame.display.set_mode((600, 600))
+pygame.display.set_caption('2048 - The Game')
+pygame.font.init()
+CLOCK = pygame.time.Clock()
+FPS = 30
+
+
+def draw_lines_and_fill(board, n):
+    """
+    Draws lines and fill value from board.
+    :param board: 2-D list.
+    :param n: Number of rows/column.
+    :return: None
+    """
+    pygame.draw.rect(WIN, (0, 0, 0), pygame.Rect(20, 20, 560, 560), width=4)
+    x = 560 // n
+    for i in range(1, n):
+        start_pos = (20 + x * i, 20)
+        stop_pos = (20 + x * i, 580)
+        pygame.draw.line(WIN, (0, 0, 0), start_pos, stop_pos, width=2)
+    for i in range(1, n):
+        start_pos = (20, 20 + x * i)
+        stop_pos = (580, 20 + x * i)
+        pygame.draw.line(WIN, (0, 0, 0), start_pos, stop_pos, width=2)
+    size = 200 // n
+    off_x = 80//n
+    off_y = 160//n
+    font_ = pygame.font.SysFont('candara', size, False, False)
+    for i in range(n):
+        for j in range(n):
+            if board[i][j] == 0:
+                num = font_.render(' ', True, (0, 0, 0))
+            else:
+                num = font_.render(str(board[i][j]), True, (0, 0, 0))
+            WIN.blit(num, (20 + off_x + x * i, 20 + off_y + x * j))
 
 
 def generate_board(n):
@@ -93,21 +132,6 @@ def generate_random_two(board, n):
             return board
 
 
-def represent_board(board, n):
-    """
-    Represents board in pretty format.
-    :param board: 2-D list.
-    :param n: Number of rows/columns in board.
-    :return: None
-    """
-    print('+' + '-----+' * n)
-    for i in range(n):
-        for j in range(n):
-            print(f'  {board[i][j]}  |' if j < n-1 else f'  {board[i][j]}  ', end='')
-        print('\n+' + '-----+' * n)
-    return None
-
-
 def win(board):
     """
     Checks if 2048 is present in board.
@@ -134,16 +158,24 @@ def lost(board):
     return True
 
 
-def take_move():
+def game_end(msg, board):
     """
-    Asks and verify if the input given by user is valid.
-    :return: Valid string entered by user.
+    Displays the message (WIN, OR LOST) and exits the game at event.QUIT.
+    :param msg: Message to be displayed.
+    :param board: 2-D list.
+    :return: None
     """
-    move = input('Enter Move (W, S, A, D): ')
-    while move not in ('w', 'a', 's', 'd', 'W', 'A', 'S', 'D'):
-        print('Invalid move!')
-        move = input('Enter Move (W, S, A, D): ')
-    return move
+    while True:
+        CLOCK.tick(FPS)
+        WIN.fill((92, 222, 222))
+        draw_lines_and_fill(board, len(board))
+        msg_t = pygame.font.SysFont('candara', 50, False, False)
+        msg_t = msg_t.render(msg, True, (0, 0, 0))
+        WIN.blit(msg_t, (200, 200))
+        pygame.display.update()
+        for event_ in pygame.event.get():
+            if event_.type == QUIT:
+                sys.exit()
 
 
 def main_game():
@@ -153,22 +185,32 @@ def main_game():
     """
     n = int(input('Enter board dimension: '))
     board = generate_board(n)
+    board = generate_random_two(board, n)
     while not win(board) and not lost(board):
-        board = generate_random_two(board, n)
-        represent_board(board, n)
-        move = take_move()
-        if move == 'W' or move == 'w':
-            board = sum_cols(board, 'left')
-        elif move == 'A' or move == 'a':
-            board = sum_rows(board, 'left')
-        elif move == 'S' or move == 's':
-            board = sum_cols(board, 'right')
-        elif move == 'D' or move == 'd':
-            board = sum_rows(board, 'right')
+        CLOCK.tick(FPS)
+        WIN.fill((92, 222, 222))
+        draw_lines_and_fill(board, n)
+        for event_ in pygame.event.get():
+            if event_.type == KEYDOWN:
+                if event_.key == K_UP:
+                    board = sum_rows(board, 'left')
+                    board = generate_random_two(board, n)
+                elif event_.key == K_DOWN:
+                    board = sum_rows(board, 'right')
+                    board = generate_random_two(board, n)
+                elif event_.key == K_RIGHT:
+                    board = sum_cols(board, 'right')
+                    board = generate_random_two(board, n)
+                elif event_.key == K_LEFT:
+                    board = sum_cols(board, 'left')
+                    board = generate_random_two(board, n)
+            elif event_.type == QUIT:
+                sys.exit()
+        pygame.display.update()
     if lost(board):
-        print('YOU LOST!')
+        game_end('YOU LOST', board)
     else:
-        print("You WON!")
+        game_end('YOU WON', board)
 
 
 # Start the game with 3 rows/columns if you are new to this game :)
